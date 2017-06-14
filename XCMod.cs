@@ -93,6 +93,70 @@ namespace UnityEditor.XCodeEditor
 			}
 		}
 		
+		public ArrayList remove_linker_flags {
+			get {
+				if(!_datastore.ContainsKey("remove_linker_flags"))
+					return null;
+				return (ArrayList)_datastore["remove_linker_flags"];
+			}
+		}
+		
+		public string development_team {
+			get {
+				if(!_datastore.ContainsKey("development_team"))
+					return null;
+				return (string)_datastore["development_team"];
+			}
+		}
+		
+		public string debug_provision_file {
+			get {
+				if(!_datastore.ContainsKey("debug_provision_file"))
+					return null;
+				return (string)_datastore["debug_provision_file"];
+			}
+		}
+		
+		public string release_provision_file {
+			get {
+				if(!_datastore.ContainsKey("release_provision_file"))
+					return null;
+				return (string)_datastore["release_provision_file"];
+			}
+		}
+		
+		public string debug_code_sign_identity {
+			get {
+				if(!_datastore.ContainsKey("debug_code_sign_identity"))
+					return null;
+				return (string)_datastore["debug_code_sign_identity"];
+			}
+		}
+		
+		public string release_code_sign_identity {
+			get {
+				if(!_datastore.ContainsKey("release_code_sign_identity"))
+					return null;
+				return (string)_datastore["release_code_sign_identity"];
+			}
+		}
+		
+		public string code_sign_entitlements_file {
+			get {
+				if(!_datastore.ContainsKey("code_sign_entitlements_file"))
+					return null;
+				return (string)_datastore["code_sign_entitlements_file"];
+			}
+		}
+		
+		public string plist_key_file {
+			get {
+				if(!_datastore.ContainsKey("plist_key_file"))
+					return null;
+				return (string)_datastore["plist_key_file"];
+			}
+		}
+		
 		public XCMod( string filename )
 		{	
 			FileInfo projectFileInfo = new FileInfo( filename );

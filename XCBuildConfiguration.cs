@@ -196,5 +196,46 @@ namespace UnityEditor.XCodeEditor
 			
 			return modified;
 		}			
+		public bool RemoveOtherLinkerFlags( string flag )
+		{
+			PBXList flags = new PBXList();
+			flags.Add( flag );
+			return RemoveOtherLinkerFlags( flags );
+		}
+
+		public bool RemoveOtherLinkerFlags( PBXList flags )
+		{
+			bool modified = false;
+
+			if( !ContainsKey( BUILDSETTINGS_KEY ) )
+				this.Add( BUILDSETTINGS_KEY, new PBXDictionary() );
+
+			if( !((PBXDictionary)_data[BUILDSETTINGS_KEY]).ContainsKey( OTHER_LDFLAGS_KEY ) ) {
+				((PBXDictionary)_data[BUILDSETTINGS_KEY]).Add( OTHER_LDFLAGS_KEY, new PBXList() );
+			}
+			else if ( ((PBXDictionary)_data[BUILDSETTINGS_KEY])[ OTHER_LDFLAGS_KEY ] is string ) {
+				string tempString = (string)((PBXDictionary)_data[BUILDSETTINGS_KEY])[OTHER_LDFLAGS_KEY];
+				((PBXDictionary)_data[BUILDSETTINGS_KEY])[ OTHER_LDFLAGS_KEY ] = new PBXList();
+				if( !string.IsNullOrEmpty(tempString) ) {
+					foreach( string flag in flags ) {
+						if(tempString.IndexOf(flag) >= 0)
+						{
+							tempString = tempString.Replace(flag,"");
+							modified = true;
+						}
+					}
+					((PBXList)((PBXDictionary)_data[BUILDSETTINGS_KEY])[OTHER_LDFLAGS_KEY]).Add( tempString );
+				}
+			}
+			
+			foreach( string flag in flags ) {
+				if( ((PBXList)((PBXDictionary)_data[BUILDSETTINGS_KEY])[OTHER_LDFLAGS_KEY]).Contains( flag ) ) {
+					((PBXList)((PBXDictionary)_data[BUILDSETTINGS_KEY])[OTHER_LDFLAGS_KEY]).Remove( flag );
+					modified = true;
+				}
+			}
+
+			return modified;
+		}
 	}
 }

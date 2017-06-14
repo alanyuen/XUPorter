@@ -285,6 +285,139 @@ namespace UnityEditor.XCodeEditor
 			return modified;
 		}
 
+		public bool RemoveOtherLinkerFlags( string flag )
+		{
+			return RemoveOtherLinkerFlags( new PBXList( flag ) ); 
+		}
+		
+		public bool RemoveOtherLinkerFlags( PBXList flags )
+		{
+			foreach( KeyValuePair<string, XCBuildConfiguration> buildConfig in buildConfigurations ) {
+				buildConfig.Value.RemoveOtherLinkerFlags( flags );
+			}
+			modified = true;
+			return modified;	
+		}
+		
+		public bool SetDevelopmentTeam(string developmentTeamID)
+		{
+			if(!project.data.ContainsKey("attributes"))
+			{
+				project.data.Add("attributes", new PBXDictionary());
+			}
+			
+			if(project.data.ContainsKey("targets"))
+			{
+				PBXDictionary attributesList = (PBXDictionary)project.data["attributes"];
+				
+				ArrayList targetList = (ArrayList)project.data["targets"];
+				foreach(string target in  targetList)
+				{
+					if(!attributesList.ContainsKey("TargetAttributes"))
+					{
+						attributesList.Add("TargetAttributes", new PBXDictionary());
+					}
+					
+					PBXDictionary targetAttributesList = (PBXDictionary)attributesList["TargetAttributes"];
+					
+					if(!targetAttributesList.ContainsKey(target))
+					{
+						PBXDictionary developmentTeamList = new PBXDictionary();
+						developmentTeamList.Add("DevelopmentTeam", developmentTeamID);
+						targetAttributesList.Add(target, developmentTeamList);
+					}
+					else
+					{
+						PBXDictionary developmentTeamList = new PBXDictionary();
+						developmentTeamList.Add("DevelopmentTeam", developmentTeamID);
+						targetAttributesList[target] = developmentTeamList;
+					}
+				}
+			}
+			modified = true;
+			return modified;	
+		}
+		
+		public bool SetCodeSignIdentity(bool isDebug, string codeSignIdentity)
+		{
+			string name = isDebug ? "Debug" : "Release";
+			foreach( XCBuildConfiguration buildConfig in _buildConfigurations.Values ) 
+			{
+				if (buildConfig.data["name"].Equals(name))
+				{
+                    PBXSortedDictionary buildSettings = buildConfig.buildSettings;
+					if (!buildSettings.ContainsKey("CODE_SIGN_IDENTITY"))
+					{
+						buildSettings.Add("CODE_SIGN_IDENTITY", codeSignIdentity);
+					}
+					else
+					{
+						buildSettings["CODE_SIGN_IDENTITY"] = codeSignIdentity;
+					}
+					
+				}
+			}
+			
+			modified = true;
+			return modified;	
+		}
+		
+		public bool SetProvisionFile(bool isDebug, string provisionFileID)
+		{
+			string name = isDebug ? "Debug" : "Release";
+			foreach( XCBuildConfiguration buildConfig in _buildConfigurations.Values  ) 
+			{
+				if (buildConfig.data["name"].Equals(name))
+				{
+                    PBXSortedDictionary buildSettings = buildConfig.buildSettings;
+					if (!buildSettings.ContainsKey("PROVISIONING_PROFILE"))
+					{
+						buildSettings.Add("PROVISIONING_PROFILE", provisionFileID);
+					}
+					else
+					{
+						buildSettings["PROVISIONING_PROFILE"] = provisionFileID;
+					}
+				}
+			}
+			
+			modified = true;
+			return modified;	
+		}
+		
+		public bool SetCodeSignEntitlementsFile(string filePath)
+		{
+			foreach( XCBuildConfiguration buildConfig in _buildConfigurations.Values  ) 
+			{
+                PBXSortedDictionary buildSettings = buildConfig.buildSettings;
+				if (!buildSettings.ContainsKey("CODE_SIGN_ENTITLEMENTS"))
+				{
+					buildSettings.Add("CODE_SIGN_ENTITLEMENTS", filePath);
+				}
+				else
+				{
+					buildSettings["CODE_SIGN_ENTITLEMENTS"] = filePath;
+				}
+			}
+			
+			modified = true;
+			return modified;	
+		}
+		
+		public bool AddPListKey(string plistFilePath, string plistKeyFilePath )
+		{
+			XCPlistFile list = new XCPlistFile(plistFilePath);
+			
+            StreamReader streamReader = new StreamReader(plistKeyFilePath);
+            string plistKeyAdd = streamReader.ReadToEnd();
+            streamReader.Close();
+			
+			list.AddKey(plistKeyAdd);
+			list.Save();
+			modified = true;
+			return modified;	
+		}
+		
 		public bool AddHeaderSearchPaths( string path )
 		{
 			return AddHeaderSearchPaths( new PBXList( path ) );
@@ -292,7 +425,7 @@ namespace UnityEditor.XCodeEditor
 		
 		public bool AddHeaderSearchPaths( PBXList paths )
 		{
-			Debug.Log ("AddHeaderSearchPaths " + paths);
+			//Debug.Log ("AddHeaderSearchPaths " + paths);
 			foreach( KeyValuePair<string, XCBuildConfiguration> buildConfig in buildConfigurations ) {
 				buildConfig.Value.AddHeaderSearchPaths( paths );
 			}
@@ -307,7 +440,7 @@ namespace UnityEditor.XCodeEditor
 		
 		public bool AddLibrarySearchPaths( PBXList paths )
 		{
-			Debug.Log ("AddLibrarySearchPaths " + paths);
+			//Debug.Log ("AddLibrarySearchPaths " + paths);
 			foreach( KeyValuePair<string, XCBuildConfiguration> buildConfig in buildConfigurations ) {
 				buildConfig.Value.AddLibrarySearchPaths( paths );
 			}
@@ -359,7 +492,7 @@ namespace UnityEditor.XCodeEditor
 				return results;
 			}
 			else if( tree.CompareTo( "SOURCE_ROOT" ) == 0 ) {
-				Debug.Log( "Source Root File" );
+				//Debug.Log( "Source Root File" );
 				System.Uri fileURI = new System.Uri( absPath );
 				System.Uri rootURI = new System.Uri( ( projectRootPath + "/." ) );
 				filePath = rootURI.MakeRelativeUri( fileURI ).ToString();
@@ -376,9 +509,10 @@ namespace UnityEditor.XCodeEditor
 			//Check if there is already a file
 			PBXFileReference fileReference = GetFile( System.IO.Path.GetFileName( filePath ) );	
 			if( fileReference != null ) {
-				Debug.Log("File already exists: " + filePath); //not a warning, because this is normal for most builds!
+				Debug.LogWarning("File is already exists: " + filePath);
 				return null;
 			}
+			//to do............................................... folder file with same name
 			
 			fileReference = new PBXFileReference( filePath, (TreeEnum)System.Enum.Parse( typeof(TreeEnum), tree ) );
 			parent.AddChild( fileReference );
@@ -405,25 +539,25 @@ namespace UnityEditor.XCodeEditor
 						break;
 					case "PBXResourcesBuildPhase":
 						foreach( KeyValuePair<string, PBXResourcesBuildPhase> currentObject in resourcesBuildPhases ) {
-							Debug.Log( "Adding Resources Build File" );
+							//Debug.Log( "Adding Resources Build File" );
 							BuildAddFile(fileReference,currentObject,weak);
 						}
 						break;
 					case "PBXShellScriptBuildPhase":
 						foreach( KeyValuePair<string, PBXShellScriptBuildPhase> currentObject in shellScriptBuildPhases ) {
-							Debug.Log( "Adding Script Build File" );
+							//Debug.Log( "Adding Script Build File" );
 							BuildAddFile(fileReference,currentObject,weak);
 						}
 						break;
 					case "PBXSourcesBuildPhase":
 						foreach( KeyValuePair<string, PBXSourcesBuildPhase> currentObject in sourcesBuildPhases ) {
-							Debug.Log( "Adding Source Build File" );
+							//Debug.Log( "Adding Source Build File" );
 							BuildAddFile(fileReference,currentObject,weak);
 						}
 						break;
 					case "PBXCopyFilesBuildPhase":
 						foreach( KeyValuePair<string, PBXCopyFilesBuildPhase> currentObject in copyBuildPhases ) {
-							Debug.Log( "Adding Copy Files Build Phase" );
+							//Debug.Log( "Adding Copy Files Build Phase" );
 							BuildAddFile(fileReference,currentObject,weak);
 						}
 						break;
@@ -563,7 +697,7 @@ namespace UnityEditor.XCodeEditor
 				return AddLocFolder(folderPath, parent, exclude, createBuildFile);
 			}
 
- 			DirectoryInfo sourceDirectoryInfo = new DirectoryInfo( folderPath );
+			DirectoryInfo sourceDirectoryInfo = new DirectoryInfo( folderPath );
 
  			if( exclude == null ){
 				Debug.Log("Exclude was null");
@@ -577,7 +711,7 @@ namespace UnityEditor.XCodeEditor
 			
 			// Create group
 			PBXGroup newGroup = GetGroup( sourceDirectoryInfo.Name, null /*relative path*/, parent );
-			Debug.Log("New Group created");
+			//Debug.Log("New Group created");
 
 			foreach( string directory in Directory.GetDirectories( folderPath ) ) {
 				Debug.Log( "DIR: " + directory );
@@ -601,7 +735,7 @@ namespace UnityEditor.XCodeEditor
 				if( Regex.IsMatch( file, regexExclude ) ) {
 					continue;
 				}
-				Debug.Log("Adding Files for Folder");
+				//Debug.Log("Adding Files for Folder");
 				AddFile( file, newGroup, "SOURCE_ROOT", createBuildFile );
 			}
 			
@@ -700,9 +834,9 @@ namespace UnityEditor.XCodeEditor
 		public void ApplyMod( string pbxmod )
 		{
 			XCMod mod = new XCMod( pbxmod );
-			foreach(var lib in mod.libs){
-				Debug.Log("Library: "+lib);
-			}
+			//foreach(var lib in mod.libs){
+			//	Debug.Log("Library: "+lib);
+			//}
 			ApplyMod( mod );
 		}
 		
@@ -714,7 +848,7 @@ namespace UnityEditor.XCodeEditor
 			
 			foreach( XCModFile libRef in mod.libs ) {
 				string completeLibPath = System.IO.Path.Combine( "usr/lib", libRef.filePath );
-				Debug.Log ("Adding library " + completeLibPath);
+				//Debug.Log ("Adding library " + completeLibPath);
 				this.AddFile( completeLibPath, modGroup, "SDKROOT", true, libRef.isWeak );
 			}
 			
@@ -726,7 +860,7 @@ namespace UnityEditor.XCodeEditor
 				string completePath = System.IO.Path.Combine( "System/Library/Frameworks", filename[0] );
 				this.AddFile( completePath, frameworkGroup, "SDKROOT", true, isWeak );
 			}
-
+			
 			Debug.Log( "Adding files..." );
 			foreach( string filePath in mod.files ) {
 				string absoluteFilePath = System.IO.Path.Combine( mod.path, filePath );
@@ -748,7 +882,7 @@ namespace UnityEditor.XCodeEditor
 			
 			Debug.Log( "Adding folders..." );
 			foreach( string folderPath in mod.folders ) {
-				string absoluteFolderPath = System.IO.Path.Combine( Application.dataPath, folderPath );
+				string absoluteFolderPath = System.IO.Path.Combine( mod.path, folderPath );
 				Debug.Log ("Adding folder " + absoluteFolderPath);
 				this.AddFolder( absoluteFolderPath, modGroup, (string[])mod.excludes.ToArray( typeof(string) ) );
 			}
@@ -774,11 +908,75 @@ namespace UnityEditor.XCodeEditor
 				this.AddOtherLinkerFlags( flag );
 			}
 
-			Debug.Log ("Adding plist items...");
-			string plistPath = this.projectRootPath + "/Info.plist";
-			XCPlist plist = new XCPlist (plistPath);
-			plist.Process(mod.plist);
+            //Debug.Log ("Adding plist items...");
+            //string plistPath = this.projectRootPath + "/Info.plist";
+            //XCPlist plist = new XCPlist (plistPath);
+            //plist.Process(mod.plist);
 
+			
+			if(mod.remove_linker_flags != null)
+			{
+				Debug.Log( "Removing linker flags..." );
+				foreach( string flag in mod.remove_linker_flags ) {
+					this.RemoveOtherLinkerFlags( flag );
+				}
+			}
+			
+			this.Consolidate();
+		}
+		
+		
+		public void ApplySetting( string pbxmod )
+		{
+			XCMod mod = new XCMod( pbxmod );
+			ApplySetting( mod );
+		}
+		
+		public void ApplySetting( XCMod mod )
+		{	
+			if(mod.development_team != null)
+			{
+				Debug.Log( "Setting development team..." );
+				this.SetDevelopmentTeam(mod.development_team);
+			}
+			
+			if(mod.debug_code_sign_identity != null)
+			{
+				Debug.Log( "Setting debug code sign identity..." );
+				this.SetCodeSignIdentity(true, mod.debug_code_sign_identity);
+			}
+			
+			if(mod.release_code_sign_identity != null)
+			{
+				Debug.Log( "Setting release code sign identity..." );
+				this.SetCodeSignIdentity(false, mod.release_code_sign_identity);
+			}
+			
+			if(mod.debug_provision_file != null)
+			{
+				Debug.Log( "Setting debug provision file..." );
+				this.SetProvisionFile(true, mod.debug_provision_file);
+			}
+			
+			if(mod.release_provision_file != null)
+			{
+				Debug.Log( "Setting release provision file..." );
+				this.SetProvisionFile(false, mod.release_provision_file);
+			}
+			
+			if(mod.code_sign_entitlements_file != null)
+			{
+				Debug.Log( "Setting code sign entitlements file file..." );
+				this.SetCodeSignEntitlementsFile(Path.Combine(mod.path, mod.code_sign_entitlements_file));
+			}
+			
+			if(mod.plist_key_file != null)
+			{
+				Debug.Log( "Setting plist key file file..." );
+				this.AddPListKey(Path.Combine(this.projectRootPath, "Info.plist"),
+						Path.Combine( mod.path, mod.plist_key_file));
+			}
+			
 			this.Consolidate();
 		}
 		
@@ -849,6 +1047,7 @@ namespace UnityEditor.XCodeEditor
 			
 			string projectPath = Path.Combine( this.filePath, "project.pbxproj" );
 
+			Backup();
 			// Delete old project file, in case of an IOException 'Sharing violation on path Error'
 			DeleteExisting(projectPath);
 

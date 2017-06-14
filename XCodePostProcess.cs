@@ -1,3 +1,4 @@
+
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -22,19 +23,27 @@ public static class XCodePostProcess
 		XCProject project = new XCProject( pathToBuiltProject );
 
 		// Find and run through all projmods files to patch the project.
-		// Please pay attention that ALL projmods files in your project folder will be excuted!
+		//Please pay attention that ALL projmods files in your project folder will be excuted!
 		string[] files = Directory.GetFiles( Application.dataPath, "*.projmods", SearchOption.AllDirectories );
 		foreach( string file in files ) {
-			UnityEngine.Debug.Log("ProjMod File: "+file);
-			project.ApplyMod( file );
+			if(!file.EndsWith("_hidden.projmods"))
+			{
+				project.ApplyMod( file );
+			}
 		}
 
 		//TODO implement generic settings as a module option
-		project.overwriteBuildSetting("CODE_SIGN_IDENTITY[sdk=iphoneos*]", "iPhone Distribution", "Release");
+		//project.overwriteBuildSetting("CODE_SIGN_IDENTITY[sdk=iphoneos*]", "iPhone Distribution", "Release");
 		
+		files = Directory.GetFiles( Application.dataPath, "*.projsetting", SearchOption.AllDirectories );
+		foreach( string file in files ) {
+			if(!file.EndsWith("_hidden.projsetting"))
+			{
+				project.ApplySetting( file );
+			}
+		}
 		// Finally save the xcode project
 		project.Save();
-
 	}
 #endif
 
