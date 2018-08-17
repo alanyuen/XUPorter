@@ -467,7 +467,7 @@ namespace UnityEditor.XCodeEditor
 			return _objects[guid];
 		}
 		
-		public PBXDictionary AddFile( string filePath, PBXGroup parent = null, string tree = "SOURCE_ROOT", bool createBuildFiles = true, bool weak = false, string complierFlag = null)
+		public PBXDictionary AddFile( string filePath, PBXGroup parent = null, string tree = "SOURCE_ROOT", bool createBuildFiles = true, bool weak = false, string compilerFlag = null)
 		{
 			//Debug.Log("AddFile " + filePath + ", " + parent + ", " + tree + ", " + (createBuildFiles? "TRUE":"FALSE") + ", " + (weak? "TRUE":"FALSE") ); 
 			
@@ -515,9 +515,9 @@ namespace UnityEditor.XCodeEditor
 			//to do............................................... folder file with same name
 			
 			fileReference = new PBXFileReference( filePath, (TreeEnum)System.Enum.Parse( typeof(TreeEnum), tree ) );
-			if(complierFlag != null)
+			if(compilerFlag != null)
 			{
-				fileReference.compilerFlags = complierFlag;
+				fileReference.compilerFlags = compilerFlag;
 			}
 			parent.AddChild( fileReference );
 			fileReferences.Add( fileReference );
@@ -869,9 +869,9 @@ namespace UnityEditor.XCodeEditor
 			foreach( string filePath in mod.files )
 			{
 				string[] filename = filePath.Split(':');
-				string complierFlag = filename.Length > 1 ? filename[1] : null;
+				string compilerFlag = filename.Length > 1 ? filename[1] : null;
                 string absoluteFilePath = System.IO.Path.Combine( mod.path, filename[0]);
-				this.AddFile( absoluteFilePath, modGroup, "SOURCE_ROOT", true, false, complierFlag);
+				this.AddFile( absoluteFilePath, modGroup, "SOURCE_ROOT", true, false, compilerFlag);
 			}
 
 			Debug.Log( "Adding embed binaries..." );
